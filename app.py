@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import mysql.connector
+import xmltodict
 
 app = Flask(__name__)
 
@@ -19,17 +20,30 @@ cursor = conn.cursor()
 
 @app.route('/users', methods=['GET'])
 def get_all_users():
+    format_type = request.args.get('format', 'json')  # Default to JSON if format not specified
     cursor.execute("SELECT * FROM users")
     users = cursor.fetchall()
-    return jsonify(users)
+
+    if format_type.lower() == 'xml':
+        # Code to convert users to XML format using xmltodict
+        xml_data = xmltodict.unparse({'users': {'user': users}}, full_document=False)
+        return xml_data, 200, {'Content-Type': 'application/xml'}
+    else:
+        return jsonify({'users': users})
 
 @app.route('/users/<int:user_id>', methods=['GET'])
 def get_user(user_id):
+    format_type = request.args.get('format', 'json')  # Default to JSON if format not specified
     cursor.execute("SELECT * FROM users WHERE id = %s", (user_id,))
     user = cursor.fetchone()
-    
+
     if user:
-        return jsonify(user)
+        if format_type.lower() == 'xml':
+            # Code to convert user to XML format using xmltodict
+            xml_data = xmltodict.unparse({'user': user}, full_document=False)
+            return xml_data, 200, {'Content-Type': 'application/xml'}
+        else:
+            return jsonify(user)
     else:
         return jsonify({'error': 'User not found'}), 404
 
