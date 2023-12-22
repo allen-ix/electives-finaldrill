@@ -1,8 +1,13 @@
 from flask import Flask, request, jsonify
 import mysql.connector
 import xmltodict
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 
 app = Flask(__name__)
+
+# Setup the Flask-JWT-Extended extension
+app.config['JWT_SECRET_KEY'] = '1234'
+jwt = JWTManager(app)
 
 # MySQL database connection configuration
 db_config = {
@@ -15,6 +20,32 @@ db_config = {
 # Create MySQL connection
 conn = mysql.connector.connect(**db_config)
 cursor = conn.cursor()
+
+##################################################################################
+
+# Protected route example using JWT
+@app.route('/protected', methods=['GET'])
+@jwt_required()
+def protected():
+    # Access the identity of the current user with get_jwt_identity
+    current_user = get_jwt_identity()
+    return jsonify(logged_in_as=current_user), 200
+
+# JWT Authentication route
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    
+    # Check username and password against your database
+    # For simplicity, let's assume a static username and password for demonstration purposes
+    if data['username'] == 'username' and data['password'] == 'password':
+        # Create a JWT token
+        access_token = create_access_token(identity=data['username'])
+        return jsonify(access_token=access_token), 200
+    else:
+        return jsonify({'error': 'Invalid username or password'}), 401
+
+#################################################################################
 
 # CRUD operations
 
